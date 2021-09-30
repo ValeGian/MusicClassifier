@@ -7,6 +7,7 @@ import pandas as pd
 
 DATASET_PATH = './dataset'
 DATASET = 'data.csv'
+LABEL = 'label'
 
 
 def write_dataset(header: list[str]):
@@ -47,14 +48,26 @@ def write_dataset(header: list[str]):
                 print(count)
 
 
-def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft.DEF_N_MFCC):
+def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft.DEF_N_MFCC, labels: list[str] = []):
     '''Read specified features from dataset
 
     :param features: list of features to read
+    :param labels: list of class names. Used to select specific rows. [] = select every class
     :return: dataset as a pd.DataFrame
     '''
     names = ft.explode_features(ft.DEF_FEATURES, n_mfcc=ft.DEF_N_MFCC)
     selected_cols = ft.explode_features(features, n_mfcc=n_mfcc)
     data = pd.read_csv(DATASET, header=None, skipinitialspace=True, names=names, usecols=selected_cols)
-    data = data.drop(labels=0, axis=0)  # drop row 0 of the dataframe
+    if labels:
+        data = data[data[LABEL].isin(labels)]
+    else:
+        data = data.drop(labels=0, axis=0)  # drop row 0 of the dataframe
     return data
+
+def get_labels():
+    '''Get label classes present in the dataset
+
+    :return: list of class names
+    '''
+    data = read_dataset(features=[])
+    return data[LABEL].unique()
