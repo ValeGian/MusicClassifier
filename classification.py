@@ -5,7 +5,24 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-from sklearn.preprocessing import StandardScaler
+
+
+def extract_features_and_label(data):
+    X = data[data.columns[:-1]]
+    y = data[data.columns[-1]]
+    return X, y
+
+
+def extract_scaled_features_and_label(data):
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    scaler.fit(data.drop(dt.LABEL, axis=1))
+    scaled_features = scaler.transform(data.drop(dt.LABEL, axis=1))
+    df_feat = pd.DataFrame(scaled_features, columns=data.columns[:-1])
+
+    X = df_feat
+    y = data[dt.LABEL]
+    return X, y
 
 
 def dec_tree(data, test_size=0.3):
@@ -28,8 +45,7 @@ def dec_tree(data, test_size=0.3):
     from sklearn.tree import DecisionTreeClassifier
 
     # Split dataset in features and target variable
-    X = data[data.columns[:-1]]
-    y = data[data.columns[-1]]
+    X, y = extract_features_and_label(data)
 
     # Split dataset into training set and test set
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
@@ -51,13 +67,8 @@ def knn(data, test_size=0.3, n_neighbors: int = 5):
     from sklearn.neighbors import KNeighborsClassifier
 
     # scale attribute values
-    scaler = StandardScaler()
-    scaler.fit(data.drop(dt.LABEL, axis=1))
-    scaled_features = scaler.transform(data.drop(dt.LABEL, axis=1))
-    df_feat = pd.DataFrame(scaled_features, columns=data.columns[:-1])
+    X, y = extract_scaled_features_and_label(data)
 
-    X = df_feat
-    y = data[dt.LABEL]
     # Split dataset into training set and test set
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
 
@@ -75,7 +86,6 @@ def knn(data, test_size=0.3, n_neighbors: int = 5):
 
     # Model Accuracy, how often is the classifier correct?
     return y_test, y_pred, metrics.accuracy_score(y_test, y_pred)
-
 
 
 def elbow_method(data, test_size=0.3, max_k: int = 5):
@@ -106,7 +116,7 @@ def elbow_method(data, test_size=0.3, max_k: int = 5):
     plt.ylabel('Error Rate')
     plt.show()
 
-    #print(f'{min_k}: Error[{min_err}] Accuracy[{min_acc}]')
-    #print(metrics.confusion_matrix(min_test, min_pred))
-    #print(metrics.classification_report(min_test, min_pred))
+    # print(f'{min_k}: Error[{min_err}] Accuracy[{min_acc}]')
+    # print(metrics.confusion_matrix(min_test, min_pred))
+    # print(metrics.classification_report(min_test, min_pred))
     return opt_k, opt_acc
