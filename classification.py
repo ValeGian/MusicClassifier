@@ -1,46 +1,17 @@
-import dataset as dt
-
-import math
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
-
-def extract_features_and_label(data):
-    '''Extract features and label from a dataset and return them separately as series
-
-    :param data: dataset as a pd.DataFrame
-    :return: features and associated label
-    '''
-    X = data[data.columns[:-1]]
-    y = data[data.columns[-1]]
-    return X, y
+import dataset as dt
 
 
-def extract_scaled_features_and_label(data):
-    '''Scale and extract features and label from a dataset and return them separately as series
+################
+# DECISION TREE
+def dec_tree(data, criterion: any = 'gini'):
+    """Apply a decision tree classifier to the dataset
 
     :param data: dataset as a pd.DataFrame
-    :return: scaled features and associated label
-    '''
-    from sklearn.preprocessing import StandardScaler
-    scaler = StandardScaler()
-    scaler.fit(data.drop(dt.LABEL, axis=1))
-    scaled_features = scaler.transform(data.drop(dt.LABEL, axis=1))
-    df_feat = pd.DataFrame(scaled_features, columns=data.columns[:-1])
-
-    X = df_feat
-    y = data[dt.LABEL]
-    return X, y
-
-
-def dec_tree(data, test_size=0.3):
-    '''Apply a decision tree classifier to the dataset
-
-    :param data: dataset as a pd.DataFrame
-    :param test_size : float or int, default=None
-        Parameter for the train_test_split function
+    :param criterion: {"gini", "entropy"}, default="gini"
+        The function to measure the quality of a split. Supported criteria are
+        "gini" for the Gini impurity and "entropy" for the information gain.
     :return: accuracy of the model
 
     Examples
@@ -51,82 +22,109 @@ def dec_tree(data, test_size=0.3):
     >>> n_mfcc = 15
     >>> data = dt.read_dataset(features, n_mfcc=n_mfcc)
     >>> accuracy = dec_tree(data)
-    '''
+    """
     from sklearn.tree import DecisionTreeClassifier
 
-    # Split dataset in features and target variable
-    X, y = extract_features_and_label(data)
-
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
+    X_train, X_test, y_train, y_test = dt.tt_split(data)
 
-    # Create Decision Tree classifer object
-    clf = DecisionTreeClassifier()
+    # Create Decision Tree classifier object
+    clf = DecisionTreeClassifier(criterion=criterion)
 
-    # Train Decision Tree Classifer
+    # Train Decision Tree Classifier
     clf = clf.fit(X_train, y_train)
 
     # Predict the response for test dataset
     y_pred = clf.predict(X_test)
 
     # Model Accuracy, how often is the classifier correct?
-    return y_test, y_pred, metrics.accuracy_score(y_test, y_pred)
+    acc = metrics.accuracy_score(y_test, y_pred)
+    return y_test, y_pred, acc
 
 
-def knn(data, test_size=0.3, n_neighbors: int = 5):
+######
+# KNN
+def knn(data, n_neighbors: int = 5):
     from sklearn.neighbors import KNeighborsClassifier
 
-    # scale attribute values
-    X, y = extract_scaled_features_and_label(data)
-
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True)
 
-    # Create KNN classifer object
+    # Create KNN classifier object
     knn = KNeighborsClassifier(n_neighbors=n_neighbors)
 
-    # Train KNN Classifer
+    # Train KNN Classifier
     knn.fit(X_train, y_train)
 
     # Predict the response for test dataset
     y_pred = knn.predict(X_test)
 
-    # print(metrics.confusion_matrix(y_test, y_pred))
-    # print(metrics.classification_report(y_test, y_pred))
+    # Model Accuracy, how often is the classifier correct?
+    acc = metrics.accuracy_score(y_test, y_pred)
+
+    return y_test, y_pred, acc
+
+
+######
+# SVM
+def svm(data, C: any = 1.0, gamma: any = 'scale'):
+    from sklearn.svm import SVC
+
+    # Split dataset into training set and test set
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True)
+
+    # Create SVM classifier object
+    svm = SVC(C=C, gamma=gamma)
+
+    # Train SVM Classifier
+    svm.fit(X_train, y_train)
+
+    # Predict the response for test dataset
+    y_pred = svm.predict(X_test)
 
     # Model Accuracy, how often is the classifier correct?
-    return y_test, y_pred, metrics.accuracy_score(y_test, y_pred)
+    acc = metrics.accuracy_score(y_test, y_pred)
+
+    return y_test, y_pred, acc
 
 
-def elbow_method(data, test_size=0.3, max_k: int = 5):
-    import matplotlib.pyplot as plt
-    # use Elbow method to choose a correct k value for KNN
-    error_rate = []
-    opt_k = 1
-    min_err = math.inf
-    opt_test = []
-    opt_pred = []
-    opt_acc = 0
-    for i in range(1, max_k):
-        y_test, y_pred, acc = knn(data, test_size=test_size, n_neighbors=i)
-        new_error = np.mean(y_pred != y_test)
-        error_rate.append(new_error)
-        if new_error < min_err:
-            opt_k = i
-            opt_test = y_test
-            opt_pred = y_pred
-            min_err = new_error
-            opt_acc = acc
+def linearSVM(data, C: any = 1.0, penalty: any = 'l2'):
+    from sklearn.svm import LinearSVC
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(1, max_k), error_rate, color='blue', linestyle='dashed', marker='o', markerfacecolor='red',
-             markersize=10)
-    plt.title('Error rate vs K Value')
-    plt.xlabel('K')
-    plt.ylabel('Error Rate')
-    plt.show()
+    # Split dataset into training set and test set
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True)
 
-    # print(f'{min_k}: Error[{min_err}] Accuracy[{min_acc}]')
-    # print(metrics.confusion_matrix(min_test, min_pred))
-    # print(metrics.classification_report(min_test, min_pred))
-    return opt_k, opt_acc
+    # Create SVM classifier object
+    svm = LinearSVC(C=C, penalty=penalty)
+
+    # Train SVM Classifier
+    svm.fit(X_train, y_train)
+
+    # Predict the response for test dataset
+    y_pred = svm.predict(X_test)
+
+    # Model Accuracy, how often is the classifier correct?
+    acc = metrics.accuracy_score(y_test, y_pred)
+
+    return y_test, y_pred, acc
+
+
+def nuSVM(data, nu: any = 0.5, gamma: any = 'scale'):
+    from sklearn.svm import NuSVC
+
+    # Split dataset into training set and test set
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True)
+
+    # Create SVM classifier object
+    svm = NuSVC(nu=nu, gamma=gamma)
+
+    # Train SVM Classifier
+    svm.fit(X_train, y_train)
+
+    # Predict the response for test dataset
+    y_pred = svm.predict(X_test)
+
+    # Model Accuracy, how often is the classifier correct?
+    acc = metrics.accuracy_score(y_test, y_pred)
+
+    return y_test, y_pred, acc

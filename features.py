@@ -18,9 +18,17 @@ DEF_FEATURES = [Features.CHROMAGRAM, Features.RMS, Features.SPEC_CENT, Features.
 DEF_N_MFCC = 20
 
 
-def extract_features(x: any, sr: any = 22050, features: list[Features] = DEF_FEATURES, n_mfcc: int = DEF_N_MFCC):
-    # x is the floating point time series of the audio
-    # sr is the sampling rate
+def extract_features(x: any, sr: any = 22050, features: list[Features] = DEF_FEATURES,
+                     n_mfcc: int = DEF_N_MFCC) -> list[float]:
+    ''' Extract features from an audio source
+
+    :param x: floating point time series of the audio
+    :param sr: sampling rate
+    :param features: list of features we want to extract from the original dataset
+    :param n_mfcc: number of MFCC features
+    :return: list of extracted features
+    '''
+
     extracted = []
 
     if Features.CHROMAGRAM in features:
@@ -56,6 +64,12 @@ def extract_features(x: any, sr: any = 22050, features: list[Features] = DEF_FEA
 
 
 def explode_features(features: list[Features], n_mfcc: int = DEF_N_MFCC) -> list[str]:
+    ''' Generate a list of feature names
+
+    :param features: list of features we want to explode
+    :param n_mfcc: number of MFCC features
+    :return: list of exploded feature names
+    '''
     exploded_features = []
     for feature in features:
         if feature != Features.MFCC:

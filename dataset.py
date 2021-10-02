@@ -4,6 +4,7 @@ import os
 import csv
 import librosa
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 DATASET_PATH = './dataset'
 DATASET = 'data.csv'
@@ -24,7 +25,7 @@ def write_dataset(header: list[str]):
     >>> features = [ft.Features.CHROMAGRAM, ft.Features.MFCC]
     >>> n_mfcc = 15
     >>> exp_features = ft.explode_features(features, n_mfcc=n_mfcc)
-    >>> create_features_dataset(exp_features)
+    >>> write_dataset(exp_features)
     '''
 
     with open(DATASET, 'w', newline='') as file:
@@ -52,6 +53,7 @@ def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft
     '''Read specified features from dataset
 
     :param features: list of features to read
+    :param n_mfcc: number of MFCC features
     :param labels: list of class names. Used to select specific rows. [] = select every class
     :return: dataset as a pd.DataFrame
     '''
@@ -64,6 +66,7 @@ def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft
         data = data.drop(labels=0, axis=0)  # drop row 0 of the dataframe
     return data
 
+
 def get_labels():
     '''Get label classes present in the dataset
 
@@ -71,3 +74,41 @@ def get_labels():
     '''
     data = read_dataset(features=[])
     return data[LABEL].unique()
+
+
+def extract_features_and_label(data):
+    '''Extract features and label from a dataset and return them separately as series
+
+    :param data: dataset as a pd.DataFrame
+    :return: features and associated label
+    '''
+    X = data.drop(columns=[LABEL])
+    y = data[LABEL]
+    return X, y
+
+
+def extract_scaled_features_and_label(data):
+    '''Scale and extract features and label from a dataset and return them separately as series
+
+    :param data: dataset as a pd.DataFrame
+    :return: scaled features and associated label
+    '''
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    scaler.fit(data.drop(LABEL, axis=1))
+    scaled_features = scaler.transform(data.drop(LABEL, axis=1))
+    df_feat = pd.DataFrame(scaled_features, columns=data.columns[:-1])
+
+    X = df_feat
+    y = data[LABEL]
+    return X, y
+
+
+def tt_split(data, scaled: bool = False, test_size=0.3):
+    if scaled:
+        X, y = extract_scaled_features_and_label(data)
+    else:
+        X, y = extract_features_and_label(data)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
+
+    return X_train, X_test, y_train, y_test
