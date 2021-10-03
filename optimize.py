@@ -1,6 +1,6 @@
 import math
-
 import numpy as np
+import warnings
 
 import classification as cl
 
@@ -38,8 +38,8 @@ def elbow_method(data, max_k: int = 5):
 def grid_search(param_grid, X_train, y_train, estimator):
     from sklearn.model_selection import GridSearchCV
 
-    grid = GridSearchCV(estimator, param_grid=param_grid, verbose=3)
+    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, scoring='accuracy', verbose=0, n_jobs=-1)
 
     grid.fit(X_train, y_train)
 
-    return grid.best_params_
+    return grid
