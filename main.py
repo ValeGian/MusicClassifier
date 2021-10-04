@@ -91,18 +91,18 @@ def grid_search(data, type='default'):
     from sklearn.model_selection import GridSearchCV
 
     if type == 'svm':
-        param_grid = [{'kernel': ['rbf'],
-                       'C': [0.1, 1, 10, 100, 1000],
-                       'gamma': ['scale', 'auto', 1, 1e-1, 1e-2, 1e-3, 1e-4]
+        param_grid = [{'kernel': ['rbf'], # 'rbf' ALWAYS results in better accuracy
+                       'C': [0.1, 1, 5, 7, 9, 10, 100],
+                       'gamma': ['scale', 'auto', 1e3, 1e2, 1e1, 0.1, 1, 1e-1, 1e-2]
                        }
-                       # 'rbf' ALWAYS results in better accuracy
                        # ,
-                       # {'kernel': ['linear'],
+                       # {'kernel': ['linear'], # 0.777 {'C': 100, 'kernel': 'linear'}
                        # 'C': [0.1, 1, 10, 100, 1000]
-                       # },
-                       # {'kernel': ['poly'],
-                       # 'degree': [1, 2, 3, 4, 5, 6],
-                       # 'gamma': ['scale', 'auto', 1, 1e-1, 1e-2, 1e-3, 1e-4]
+                       # }
+                       # ,
+                       # {'kernel': ['poly'], # 0.811 {'degree': 3, 'gamma': 1, 'kernel': 'poly'}
+                       # 'degree': [1, 2, 3, 4, 5],
+                       # 'gamma': ['scale', 'auto', 1e4, 1e3, 1e2, 1e1, 1, 0.1]
                        # }
                       ]
         estimator = SVC()
@@ -137,7 +137,7 @@ def grid_search(data, type='default'):
     # Split dataset into training set and test set
     X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=scale, randoma_state=101)
 
-    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, scoring='accuracy', verbose=0, n_jobs=None)
+    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, scoring='accuracy', verbose=3, n_jobs=None)
 
     grid.fit(X_train, y_train)
 
@@ -154,13 +154,13 @@ if __name__ == '__main__':
     X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=False, randoma_state=101)
     sX_train, sX_test, sy_train, sy_test = dt.tt_split(data, scaled=True, randoma_state=101)
 
-    '''SVM -> 0.861 {'C': 10, 'gamma': 'scale', 'kernel': 'rbf'}
+    '''SVM -> 0.861 {'C': 7, 'gamma': 'scale', 'kernel': 'rbf'}'''
     res = grid_search(data, type='svm')
     svm = res['estimator']
     svm.fit(sX_train, sy_train)
     acc = svm.score(sX_test, sy_test)
     print(f'SVM -> {acc}: {res["params"]}')
-    '''
+    ''''''
     '''Linear SVM -> 0.777 {'C': 1, 'penalty': 'l2'}
     res = grid_search(data, type='linear')
     linSVM = res['estimator']
