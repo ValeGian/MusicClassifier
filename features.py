@@ -20,14 +20,14 @@ DEF_N_MFCC = 20
 
 def extract_features(x: any, sr: any = 22050, features: list[Features] = DEF_FEATURES,
                      n_mfcc: int = DEF_N_MFCC) -> list[float]:
-    ''' Extract features from an audio source
+    """ Extract features from an audio source
 
     :param x: floating point time series of the audio
     :param sr: sampling rate
     :param features: list of features we want to extract from the original dataset
     :param n_mfcc: number of MFCC features
     :return: list of extracted features
-    '''
+    """
 
     extracted = []
 

@@ -5,10 +5,12 @@ import statsmodels.api as sm
 from matplotlib import pyplot as plt
 
 
-def conf_interval(data: np.ndarray, conf_level: float = 0.95, loc: bool = False, scale: bool = False) -> (float, float):
+def conf_interval(data: np.ndarray, conf_level: float = 0.95, loc: bool = False, scale: bool = False,
+                  verbose: bool = False) -> (float, float):
     # ASSUMPTION: normal distribution, which can be verified using Q-Q Plot
-    #fig = sm.qqplot(data, line="q")
-    #plt.show()
+    if verbose:
+        fig = sm.qqplot(data, line="q")
+        plt.show()
 
     df = data.size - 1
     alpha = (1 - conf_level)/2

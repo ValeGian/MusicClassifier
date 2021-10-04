@@ -14,13 +14,31 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from sklearn import metrics
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC, LinearSVC, NuSVC
+from sklearn.model_selection import cross_val_score
+
 DEMONS = './demons_30.wav'
 
 
 def test_dec_tree(data, criterion, n_iter: int = 10):
     accuracies = []
+
+    # Create Decision Tree classifier object
+    dtree = DecisionTreeClassifier(criterion=criterion)
     for i in range(n_iter):
-        y_test, y_pred, acc = cl.dec_tree(data, criterion=criterion)
+        # Split dataset into training set and test set
+        X_train, X_test, y_train, y_test = dt.tt_split(data, randoma_state=None)
+
+        # Train Decision Tree Classifier
+        dtree.fit(X_train, y_train)
+
+        # Model Accuracy, how often is the classifier correct?
+        acc = dtree.score(X_test, y_test)
+
         accuracies.append(acc)
     accuracies = np.array(accuracies)
     return accuracies
@@ -28,8 +46,18 @@ def test_dec_tree(data, criterion, n_iter: int = 10):
 
 def test_random_forest(data, criterion, n_estimators, n_iter: int = 10):
     accuracies = []
+
+    # Create Random Forest classifier object
+    rfc = RandomForestClassifier(n_estimators=n_estimators, criterion=criterion)
     for i in range(n_iter):
-        y_test, y_pred, acc = cl.random_forest(data, n_estimators=n_estimators, criterion=criterion)
+        # Split dataset into training set and test set
+        X_train, X_test, y_train, y_test = dt.tt_split(data, randoma_state=None)
+
+        # Train Random Forest Classifier
+        rfc.fit(X_train, y_train)
+
+        # Model Accuracy, how often is the classifier correct?
+        acc = rfc.score(X_test, y_test)
         accuracies.append(acc)
     accuracies = np.array(accuracies)
     return accuracies
@@ -43,6 +71,7 @@ def test_elbow(data):
         if acc > max_acc:
             opt_k = k
             max_acc = acc
+        print(acc)
     return opt_k, max_acc
 
 
@@ -59,23 +88,22 @@ def test_svm(data, type='def', kernel: str = 'rbf', C: any = 1.0, gamma: any = '
 
 
 def grid_search(data, type='default'):
-    from sklearn.svm import SVC, LinearSVC, NuSVC
-    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.model_selection import GridSearchCV
 
     if type == 'svm':
         param_grid = [{'kernel': ['rbf'],
                        'C': [0.1, 1, 10, 100, 1000],
                        'gamma': ['scale', 'auto', 1, 1e-1, 1e-2, 1e-3, 1e-4]
                        }
-                      # 'rbf' ALWAYS results in better accuracy
-                      # ,
-                      # {'kernel': ['linear'],
-                      # 'C': [0.1, 1, 10, 100, 1000]
-                      # },
-                      # {'kernel': ['poly'],
-                      # 'degree': [1, 2, 3, 4, 5, 6],
-                      # 'gamma': ['scale', 'auto', 1, 1e-1, 1e-2, 1e-3, 1e-4]
-                      # }
+                       # 'rbf' ALWAYS results in better accuracy
+                       # ,
+                       # {'kernel': ['linear'],
+                       # 'C': [0.1, 1, 10, 100, 1000]
+                       # },
+                       # {'kernel': ['poly'],
+                       # 'degree': [1, 2, 3, 4, 5, 6],
+                       # 'gamma': ['scale', 'auto', 1, 1e-1, 1e-2, 1e-3, 1e-4]
+                       # }
                       ]
         estimator = SVC()
         scale = True
@@ -107,80 +135,50 @@ def grid_search(data, type='default'):
         scale = False
 
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=scale)
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=scale, randoma_state=101)
 
-    grid = opt.grid_search(param_grid, X_train=X_train, y_train=y_train, estimator=estimator)
-    return {'score': grid.best_score_, 'params': grid.best_params_}
+    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, scoring='accuracy', verbose=0, n_jobs=None)
+
+    grid.fit(X_train, y_train)
+
+    return {'score': grid.best_score_, 'params': grid.best_params_, 'estimator': grid.best_estimator_}
 
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     test_num = 100
     labels = dt.get_labels()
-    data = dt.read_dataset(labels=['blues', 'classical', 'jazz', 'metal', 'pop', 'rock'], n_mfcc=17)
-    '''
-    # TEST dec tree 'gini' -> 0.693
-    accuracies = test_dec_tree(data, criterion='gini', n_iter=test_num)
-    avg = np.mean(accuracies)
-    conf_int = st.conf_interval(accuracies, conf_level=0.95)
-    print(f'Decision Tree with gini AVG: {avg} -> {conf_int}\n')
-    
-    # TEST dec tree 'entropy' -> 0.698
-    accuracies = test_dec_tree(data, criterion='entropy', n_iter=test_num)
-    avg = np.mean(accuracies)
-    conf_int = st.conf_interval(accuracies, conf_level=0.95)
-    print(f'Decision Tree with entropy AVG: {avg} -> {conf_int}\n')
+    data = dt.read_dataset(labels=['blues', 'classical', 'jazz', 'metal', 'pop', 'rock'], n_mfcc=20)
 
-    # TEST random forest 'gini -> 0.829
-    accuracies = test_random_forest(data, n_estimators=100, criterion='gini', n_iter=test_num)
-    avg = np.mean(accuracies)
-    conf_int = st.conf_interval(accuracies, conf_level=0.95)
-    print(f'Random Forest with gini AVG: {avg} -> {conf_int}\n')
-    
-    # TEST random forest 'entropy -> 0.824
-    accuracies = test_random_forest(data, n_estimators=100, criterion='entropy', n_iter=test_num)
-    avg = np.mean(accuracies)
-    conf_int = st.conf_interval(accuracies, conf_level=0.95)
-    print(f'Random Forest with entropy AVG: {avg} -> {conf_int}\n')
-    '''
-    # print(grid_search(data, type='knn'))
-    # print(cl.knn(data, n_neighbors=5, weights='distance', p=1)[-1])
-    '''
-    #TEST elbow method for KNN -> 0.855
-    opt_k = 1
-    max_acc = 0
-    for i in range(10):
-        k, acc = test_elbow(data)
-        print(i)
-        if acc > max_acc:
-            opt_k = k
-            max_acc = acc
-    print(f'KNN  -> {max_acc}')
-    '''
-    '''
-    # TEST SVM -> 0.872
-    best_acc = test_svm(data, kernel='rbf', C=10, gamma='scale')
-    print(f'SVM -> {best_acc}')
+    # Split dataset into training set and test set
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=False, randoma_state=101)
+    sX_train, sX_test, sy_train, sy_test = dt.tt_split(data, scaled=True, randoma_state=101)
 
-    # TEST LINEAR SVM -> 0.766
-    # best_acc = test_svm(data, 'linear', C=10, penalty='l2')
-    # print(f'Linear SVM -> {best_acc}')
-
-    # TEST NuSVM -> 0.894
-    best_acc = test_svm(data, 'nu', gamma='scale', nu=0.1)
-    print(f'Nu SVM -> {best_acc}')
+    '''SVM -> 0.861 {'C': 10, 'gamma': 'scale', 'kernel': 'rbf'}
+    res = grid_search(data, type='svm')
+    svm = res['estimator']
+    svm.fit(sX_train, sy_train)
+    acc = svm.score(sX_test, sy_test)
+    print(f'SVM -> {acc}: {res["params"]}')
     '''
+    '''Linear SVM -> 0.777 {'C': 1, 'penalty': 'l2'}
+    res = grid_search(data, type='linear')
+    linSVM = res['estimator']
+    linSVM.fit(sX_train, sy_train)
+    acc = linSVM.score(sX_test, sy_test)
+    print(f'LinearSVM -> {acc}: {res["params"]}')
     '''
-    def_best_params = grid_search(data, type='svm')
-
-    # lin_best_params = grid_search(data, type='linear') -> WORST OF THE 3
-
-    nu_best_params = grid_search(data, type='nu')
-
-    print(f'{def_best_params}\n{nu_best_params}')
+    '''NuSVM -> 0.872 {'gamma': 'scale', 'nu': 0.01}
+    res = grid_search(data, type='nu')
+    nuSVM = res['estimator']
+    nuSVM.fit(sX_train, sy_train)
+    acc = nuSVM.score(sX_test, sy_test)
+    print(f'NuSVM -> {acc}: {res["params"]}')
     '''
-    for i in range(13, 21):
-        data = dt.read_dataset(labels=['blues', 'classical', 'jazz', 'metal', 'pop', 'rock'], n_mfcc=i)
-        def_best_params = grid_search(data, type='svm')
-
-        print(f'{i}: {def_best_params}')
+    '''KNN -> 0.805 {'n_neighbors': 5, 'p': 1, 'weights': 'distance'}
+    res = grid_search(data, type='knn')
+    knn = res['estimator']
+    knn.fit(sX_train, sy_train)
+    acc = knn.score(sX_test, sy_test)
+    print(f'KNN -> {acc}: {res["params"]}')
+    '''

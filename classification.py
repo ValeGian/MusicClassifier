@@ -80,11 +80,11 @@ def random_forest(data, n_estimators: any = 100, criterion: any = 'gini', verbos
 
 ######
 # KNN
-def knn(data, n_neighbors: int = 5, weights: any = 'uniform', p: int = 2, verbose=False):
+def knn(data, n_neighbors: int = 5, weights: any = 'uniform', p: int = 2, random_state=101, verbose=False):
     from sklearn.neighbors import KNeighborsClassifier
 
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True)
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True, randoma_state=random_state)
 
     # Create KNN classifier object
     knn = KNeighborsClassifier(n_neighbors=n_neighbors, weights=weights, metric='minkowski', p=p)

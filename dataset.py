@@ -12,7 +12,7 @@ LABEL = 'label'
 
 
 def write_dataset(header: list[str]):
-    '''Extract features from the audio signals in the original dataset
+    """Extract features from the audio signals in the original dataset
 
     In output we will have the data.csv file, that will be our dataset
 
@@ -26,7 +26,7 @@ def write_dataset(header: list[str]):
     >>> n_mfcc = 15
     >>> exp_features = ft.explode_features(features, n_mfcc=n_mfcc)
     >>> write_dataset(exp_features)
-    '''
+    """
 
     with open(DATASET, 'w', newline='') as file:
         writer = csv.writer(file)
@@ -50,13 +50,13 @@ def write_dataset(header: list[str]):
 
 
 def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft.DEF_N_MFCC, labels: list[str] = []):
-    '''Read specified features from dataset
+    """Read specified features from dataset
 
     :param features: list of features to read
     :param n_mfcc: number of MFCC features
     :param labels: list of class names. Used to select specific rows. [] = select every class
     :return: dataset as a pd.DataFrame
-    '''
+    """
     names = ft.explode_features(ft.DEF_FEATURES, n_mfcc=ft.DEF_N_MFCC)
     selected_cols = ft.explode_features(features, n_mfcc=n_mfcc)
     data = pd.read_csv(DATASET, header=None, skipinitialspace=True, names=names, usecols=selected_cols)
@@ -68,31 +68,31 @@ def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft
 
 
 def get_labels():
-    '''Get label classes present in the dataset
+    """Get label classes present in the dataset
 
     :return: list of class names
-    '''
+    """
     data = read_dataset(features=[])
     return data[LABEL].unique()
 
 
 def extract_features_and_label(data):
-    '''Extract features and label from a dataset and return them separately as series
+    """Extract features and label from a dataset and return them separately as series
 
     :param data: dataset as a pd.DataFrame
     :return: features and associated label
-    '''
+    """
     X = data.drop(columns=[LABEL])
     y = data[LABEL]
     return X, y
 
 
 def extract_scaled_features_and_label(data):
-    '''Scale and extract features and label from a dataset and return them separately as series
+    """Scale and extract features and label from a dataset and return them separately as series
 
     :param data: dataset as a pd.DataFrame
     :return: scaled features and associated label
-    '''
+    """
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler()
     scaler.fit(data.drop(LABEL, axis=1))
@@ -104,11 +104,11 @@ def extract_scaled_features_and_label(data):
     return X, y
 
 
-def tt_split(data, scaled: bool = False, test_size=0.3):
+def tt_split(data, scaled: bool = False, test_size=0.3, randoma_state=101):
     if scaled:
         X, y = extract_scaled_features_and_label(data)
     else:
         X, y = extract_features_and_label(data)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=randoma_state)
 
     return X_train, X_test, y_train, y_test
