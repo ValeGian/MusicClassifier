@@ -9,6 +9,7 @@ import optimize as opt
 
 import librosa
 import numpy as np
+import pandas as pd
 import os
 
 import matplotlib.pyplot as plt
@@ -17,9 +18,13 @@ import seaborn as sns
 from sklearn import metrics
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
+from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
 
 DEMONS = './demons_30.wav'
 
@@ -31,7 +36,7 @@ def test_dec_tree(data, criterion, n_iter: int = 10):
     dtree = DecisionTreeClassifier(criterion=criterion)
     for i in range(n_iter):
         # Split dataset into training set and test set
-        X_train, X_test, y_train, y_test = dt.tt_split(data, randoma_state=None)
+        X_train, X_test, y_train, y_test = dt.tt_split(data, random_state=None)
 
         # Train Decision Tree Classifier
         dtree.fit(X_train, y_train)
@@ -51,7 +56,7 @@ def test_random_forest(data, criterion, n_estimators, n_iter: int = 10):
     rfc = RandomForestClassifier(n_estimators=n_estimators, criterion=criterion)
     for i in range(n_iter):
         # Split dataset into training set and test set
-        X_train, X_test, y_train, y_test = dt.tt_split(data, randoma_state=None)
+        X_train, X_test, y_train, y_test = dt.tt_split(data, random_state=None)
 
         # Train Random Forest Classifier
         rfc.fit(X_train, y_train)
@@ -87,37 +92,54 @@ def test_svm(data, type='def', kernel: str = 'rbf', C: any = 1.0, gamma: any = '
     return acc
 
 
-def grid_search(data, type='default'):
-    from sklearn.model_selection import GridSearchCV
+def grid_search(data, type='default', verbose=0):
 
-    if type == 'svm':
-        param_grid = [{'kernel': ['rbf'], # 'rbf' ALWAYS results in better accuracy
-                       'C': [0.1, 1, 5, 7, 9, 10, 100],
-                       'gamma': ['scale', 'auto', 1e3, 1e2, 1e1, 0.1, 1, 1e-1, 1e-2]
+    if type == 'dec_tree':
+        param_grid = [{'criterion': ['entropy', 'gini'],
+                       'max_depth': range(2, 11),
+                       'max_features': [None, 'sqrt', 'log2']
+                       },
+                      {'criterion': ['entropy', 'gini'],
+                       'min_samples_leaf': range(1, 10),
+                       'max_features': [None, 'sqrt', 'log2']
                        }
-                       # ,
-                       # {'kernel': ['linear'], # 0.777 {'C': 100, 'kernel': 'linear'}
-                       # 'C': [0.1, 1, 10, 100, 1000]
-                       # }
-                       # ,
-                       # {'kernel': ['poly'], # 0.811 {'degree': 3, 'gamma': 1, 'kernel': 'poly'}
-                       # 'degree': [1, 2, 3, 4, 5],
-                       # 'gamma': ['scale', 'auto', 1e4, 1e3, 1e2, 1e1, 1, 0.1]
-                       # }
-                      ]
+        ]
+        estimator = DecisionTreeClassifier(random_state=10)
+        scale = True
+
+    elif type == 'r_forest':
+        x = 2
+        estimator = RandomForestClassifier()
+        scale = False
+
+    elif type == 'svm':
+        param_grid = [{'kernel': ['rbf'], # 'rbf' ALWAYS results in better accuracy
+                       'C': [0.1, 1, 11, 100, 1000],
+                       'gamma': ['scale', 'auto', 10, 1, 0.1, 0.014678, 0.01, 0.001, 0.0001]
+                       }
+                        ,
+                        #{'kernel': ['linear'], # 0.810 {'C': 0.15, 'kernel': 'linear'}
+                        #'C': [0.145, 0.148, 0.15, 0.152, 0.155]
+                        #}
+                        #,
+                        #{'kernel': ['poly'], # 0.815 {'degree': 1, 'gamma': 0.1, 'kernel': 'poly'}
+                        #'degree': [1, 2, 3, 4, 5],
+                        #'gamma': ['scale', 'auto', 1e1, 2, 1.1, 1, 0.9, 0.1, 0.01]
+                        #}
+        ]
         estimator = SVC()
         scale = True
 
     elif type == 'linear':
-        param_grid = {'C': [0.1, 1, 10, 100, 1000],
+        param_grid = {'C': [0.1, 0.145, 0.15, 0.155, 0.2],
                       'penalty': ['l1', 'l2']
                       }
         estimator = LinearSVC()
         scale = True
 
     elif type == 'nu':
-        param_grid = {'nu': [0.001, 0.01, 0.1, 0.25, 0.5, 0.75, 1],
-                      'gamma': ['scale', 'auto', 1, 1e-1, 1e-2, 1e-3, 1e-4]}
+        param_grid = {'nu': [0.1, 0.235, 0.5, 0.75, 1],
+                      'gamma': ['scale', 'auto', 10, 1, 0.1, 0.014678, 0.01, 0.001, 0.0001]}
         estimator = NuSVC()
         scale = True
 
@@ -135,9 +157,9 @@ def grid_search(data, type='default'):
         scale = False
 
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=scale, randoma_state=101)
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=scale, random_state=101)
 
-    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, scoring='accuracy', verbose=3, n_jobs=None)
+    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, verbose=verbose, n_jobs=None)
 
     grid.fit(X_train, y_train)
 
@@ -148,37 +170,76 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     test_num = 100
     labels = dt.get_labels()
-    data = dt.read_dataset(labels=['blues', 'classical', 'jazz', 'metal', 'pop', 'rock'], n_mfcc=20)
+    data = dt.read_dataset(labels=['blues', 'classical', 'jazz', 'hiphop', 'pop', 'rock'], n_mfcc=20)
+    dt.remove_duplicates(data, same_label=False, inplace=True)
+    print(data['label'].value_counts())
 
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=False, randoma_state=101)
-    sX_train, sX_test, sy_train, sy_test = dt.tt_split(data, scaled=True, randoma_state=101)
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=False, random_state=101)
+    sX_train, sX_test, sy_train, sy_test = dt.tt_split(data, scaled=True, random_state=101)
 
-    '''SVM -> 0.861 {'C': 7, 'gamma': 'scale', 'kernel': 'rbf'}'''
+    '''Decision Tree -> 0.620 {'criterion': 'entropy', 'max_features': 'sqrt', 'min_samples_leaf': 1}'''
+    res = grid_search(data, type='dec_tree', verbose=2)
+    dec_tree = res['estimator']
+    cv_acc = res['score']
+    dec_tree.fit(X_train, y_train)
+    acc = dec_tree.score(X_test, y_test)
+    print(f'Decision Tree -> [M]{cv_acc} - {acc}: {res["params"]}')
+    ''''''
+    '''SVM -> 0.827 {'C': 11, 'gamma': 0.01468, 'kernel': 'rbf'}
     res = grid_search(data, type='svm')
     svm = res['estimator']
+    cv_acc = res['score']
     svm.fit(sX_train, sy_train)
     acc = svm.score(sX_test, sy_test)
-    print(f'SVM -> {acc}: {res["params"]}')
-    ''''''
-    '''Linear SVM -> 0.777 {'C': 1, 'penalty': 'l2'}
+    print(f'SVM -> [M]{cv_acc} - {acc}: {res["params"]}')
+    '''
+    '''Linear SVM -> 0.765 {'C': 0.15, 'penalty': 'l2'}
     res = grid_search(data, type='linear')
     linSVM = res['estimator']
+    cv_acc = res['score']
     linSVM.fit(sX_train, sy_train)
     acc = linSVM.score(sX_test, sy_test)
-    print(f'LinearSVM -> {acc}: {res["params"]}')
+    print(f'LinearSVM -> [M]{cv_acc} - {acc}: {res["params"]}')
     '''
-    '''NuSVM -> 0.872 {'gamma': 'scale', 'nu': 0.01}
+    '''NuSVM -> 0.838 {'gamma': 'scale', 'nu': 0.235}
     res = grid_search(data, type='nu')
     nuSVM = res['estimator']
+    cv_acc = res['score']
     nuSVM.fit(sX_train, sy_train)
     acc = nuSVM.score(sX_test, sy_test)
-    print(f'NuSVM -> {acc}: {res["params"]}')
+    print(f'NuSVM -> [M]{cv_acc} - {acc}: {res["params"]}')
     '''
-    '''KNN -> 0.805 {'n_neighbors': 5, 'p': 1, 'weights': 'distance'}
+    '''KNN -> 0.743 {'n_neighbors': 9, 'p': 2, 'weights': 'uniform'}
     res = grid_search(data, type='knn')
     knn = res['estimator']
+    cv_acc = res['score']
     knn.fit(sX_train, sy_train)
     acc = knn.score(sX_test, sy_test)
-    print(f'KNN -> {acc}: {res["params"]}')
+    print(f'KNN -> [M]{cv_acc} - {acc}: {res["params"]}')
+    '''
+
+    '''PCA
+    pca = PCA()
+    svm = SVC()
+    pipe = Pipeline(steps=[('pca', pca),
+                           ('svm', svm)])
+    n_components = list(range(1, data.shape[1] + 1, 1))
+    C = [0.1, 1, 11, 100, 1000]
+    gamma = ['scale', 'auto', 10, 1, 0.1, 0.014678, 0.01, 0.001, 0.0001]
+    parameters = dict(pca__n_components=n_components,
+                      svm__gamma=gamma,
+                      svm__C=C)
+    clf_GS = GridSearchCV(pipe, parameters, verbose=2)
+    clf_GS.fit(X_train, y_train)
+
+    print('Best gamma:', clf_GS.best_estimator_.get_params()['svm__gamma'])
+    print('Best C:', clf_GS.best_estimator_.get_params()['svm__C'])
+    print('Best Number Of Components:', clf_GS.best_estimator_.get_params()['pca__n_components'])
+    print()
+    print(clf_GS.best_estimator_.get_params()['svm'])
+    svm = clf_GS.best_estimator_.get_params()['svm']
+    svm.fit(X_train, y_train)
+    acc = svm.score(X_test, y_test)
+    print(f'SVM -> {acc}: {clf_GS.best_params_}')
     '''
