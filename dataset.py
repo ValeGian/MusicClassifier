@@ -49,7 +49,8 @@ def write_dataset(header: list[str]):
                 print(count)
 
 
-def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft.DEF_N_MFCC, labels: list[str] = []):
+def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft.DEF_N_MFCC,
+                 labels: list[str] = []) -> pd.DataFrame:
     """Read specified features from dataset
 
     :param features: list of features to read
@@ -65,6 +66,7 @@ def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft
         data = data[data[LABEL].isin(labels)]
     else:
         data = data.drop(labels=0, axis=0)  # drop row 0 of the dataframe
+    data = data.apply(lambda x: pd.to_numeric(x, errors='ignore'))
     return data
 
 

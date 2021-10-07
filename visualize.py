@@ -1,6 +1,29 @@
 import matplotlib.pyplot as plt
 import librosa.display
+import numpy as np
 import sklearn
+import seaborn as sns
+
+def correlation_matrix(data):
+    sns.set_theme(style="white")
+    # Compute the correlation matrix
+    selected_cols = data.columns.tolist()
+    corr = data[selected_cols].corr()
+
+    # Generate a mask for the upper triangle
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+
+    # Set up the matplotlib figure
+    f, ax = plt.subplots(figsize=(19, 14), dpi=200)
+
+    # Generate a custom diverging colormap
+    cmap = sns.diverging_palette(240, 15, as_cmap=True)
+
+    # Draw the heatmap with the mask and correct aspect ratio
+    sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
+                square=True, linewidths=.5, annot=True, cbar_kws={"shrink": .5})
+
+    plt.savefig('./imgs/audio_features_correlation_matrix.png')
 
 def waveform(x: any, sr: any = 22050):
     plt.figure(figsize=(14, 5))

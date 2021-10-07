@@ -19,6 +19,7 @@ from sklearn import metrics
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
 from sklearn.model_selection import GridSearchCV
@@ -104,13 +105,35 @@ def grid_search(data, type='default', verbose=0):
                        'max_features': [None, 'sqrt', 'log2']
                        }
         ]
-        estimator = DecisionTreeClassifier(random_state=10)
-        scale = True
+        estimator = DecisionTreeClassifier(random_state=101)
 
     elif type == 'r_forest':
-        x = 2
-        estimator = RandomForestClassifier()
-        scale = False
+        param_grid = [{'criterion': ['entropy', 'gini'],
+                       'n_estimators': np.arange(5, 105
+                                                 , 10),
+                       'max_depth': range(2, 11),
+                       'max_features': [None, 'sqrt', 'log2']
+                       },
+                      {'criterion': ['entropy', 'gini'],
+                       'n_estimators': np.arange(5, 105, 10),
+                       'min_samples_leaf': range(1, 10),
+                       'max_features': [None, 'sqrt', 'log2']
+                       }
+        ]
+        estimator = RandomForestClassifier(random_state=0)
+
+    elif type == 'grad_boost':
+        param_grid = {
+            "loss": ["deviance", "exponential"],
+            "learning_rate": [0.01, 0.1, 0.2],
+            "min_samples_split": [2, 0.1],
+            "max_depth": [5, 8],
+            "max_features": ["log2", "sqrt"],
+            "criterion": ["friedman_mse", "squared_error"],
+            "subsample": [0.5, 0.75, 1.0],
+            "n_estimators": [10, 50, 100]
+        }
+        estimator = GradientBoostingClassifier(random_state=0)
 
     elif type == 'svm':
         param_grid = [{'kernel': ['rbf'], # 'rbf' ALWAYS results in better accuracy
@@ -128,20 +151,17 @@ def grid_search(data, type='default', verbose=0):
                         #}
         ]
         estimator = SVC()
-        scale = True
 
     elif type == 'linear':
         param_grid = {'C': [0.1, 0.145, 0.15, 0.155, 0.2],
                       'penalty': ['l1', 'l2']
                       }
         estimator = LinearSVC()
-        scale = True
 
     elif type == 'nu':
         param_grid = {'nu': [0.1, 0.235, 0.5, 0.75, 1],
                       'gamma': ['scale', 'auto', 10, 1, 0.1, 0.014678, 0.01, 0.001, 0.0001]}
         estimator = NuSVC()
-        scale = True
 
     elif type == 'knn':
         param_grid = {'n_neighbors': [1, 3, 5, 7, 9, 11, 15],
@@ -149,17 +169,15 @@ def grid_search(data, type='default', verbose=0):
                       'p': [1, 2, 3, 4, 5, 6]
                       }
         estimator = KNeighborsClassifier()
-        scale = True
 
     else:
         {}
         estimator = None
-        scale = False
 
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=scale, random_state=101)
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True, random_state=101)
 
-    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, verbose=verbose, n_jobs=None)
+    grid = GridSearchCV(estimator, param_grid=param_grid, cv=10, verbose=verbose, n_jobs=-1)
 
     grid.fit(X_train, y_train)
 
@@ -172,50 +190,74 @@ if __name__ == '__main__':
     labels = dt.get_labels()
     data = dt.read_dataset(labels=['blues', 'classical', 'jazz', 'hiphop', 'pop', 'rock'], n_mfcc=20)
     dt.remove_duplicates(data, same_label=False, inplace=True)
-    print(data['label'].value_counts())
+    # print(data.describe())
+
+    # vl.correlation_matrix(data)
 
     # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=False, random_state=101)
-    sX_train, sX_test, sy_train, sy_test = dt.tt_split(data, scaled=True, random_state=101)
+    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True, random_state=101)
 
-    '''Decision Tree -> 0.620 {'criterion': 'entropy', 'max_features': 'sqrt', 'min_samples_leaf': 1}'''
+    '''[10]Decision Tree -> 0.620 {'criterion': 'entropy', 'max_features': 'sqrt', 'min_samples_leaf': 1}
     res = grid_search(data, type='dec_tree', verbose=2)
     dec_tree = res['estimator']
     cv_acc = res['score']
     dec_tree.fit(X_train, y_train)
     acc = dec_tree.score(X_test, y_test)
     print(f'Decision Tree -> [M]{cv_acc} - {acc}: {res["params"]}')
-    ''''''
+    '''
+    '''[9]Random Forest -> 0.788: {'criterion': 'entropy', 'max_depth': 8, 'max_features': 'sqrt', 'n_estimators': 65}
+    res = grid_search(data, type='r_forest', verbose=2)
+    dec_tree = res['estimator']
+    cv_acc = res['score']
+    print(dec_tree)
+    dec_tree.fit(X_train, y_train)
+    acc = dec_tree.score(X_test, y_test)
+    print(f'Random Forest -> [M]{cv_acc} - {acc}: {res["params"]}')
+    '''
+    '''[0]Gradient Boosting -> 0.776: {'criterion': 'squared_error', 'learning_rate': 0.1, 
+                                       'loss': 'deviance', 'max_depth': 8, 'max_features': 'log2', 
+                                       'min_samples_split': 2, 'n_estimators': 100, 'subsample': 0.75}
+    res = grid_search(data, type='grad_boost', verbose=20)
+    gb = res['estimator']
+    cv_acc = res['score']
+    print(gb)
+    gb.fit(X_train, y_train)
+    acc = gb.score(X_test, y_test)
+    print(f'Gradient Boosting -> [M]{cv_acc} - {acc}: {res["params"]}')
+    '''
+    # gb = GradientBoostingClassifier(random_state=0)
+    # gb.fit(X_train, y_train)
+    # print(gb.score(X_test, y_test))
     '''SVM -> 0.827 {'C': 11, 'gamma': 0.01468, 'kernel': 'rbf'}
     res = grid_search(data, type='svm')
     svm = res['estimator']
     cv_acc = res['score']
-    svm.fit(sX_train, sy_train)
-    acc = svm.score(sX_test, sy_test)
+    svm.fit(X_train, y_train)
+    acc = svm.score(X_test, y_test)
     print(f'SVM -> [M]{cv_acc} - {acc}: {res["params"]}')
     '''
     '''Linear SVM -> 0.765 {'C': 0.15, 'penalty': 'l2'}
     res = grid_search(data, type='linear')
     linSVM = res['estimator']
     cv_acc = res['score']
-    linSVM.fit(sX_train, sy_train)
-    acc = linSVM.score(sX_test, sy_test)
+    linSVM.fit(X_train, y_train)
+    acc = linSVM.score(X_test, y_test)
     print(f'LinearSVM -> [M]{cv_acc} - {acc}: {res["params"]}')
     '''
     '''NuSVM -> 0.838 {'gamma': 'scale', 'nu': 0.235}
     res = grid_search(data, type='nu')
     nuSVM = res['estimator']
     cv_acc = res['score']
-    nuSVM.fit(sX_train, sy_train)
-    acc = nuSVM.score(sX_test, sy_test)
+    nuSVM.fit(X_train, y_train)
+    acc = nuSVM.score(X_test, y_test)
     print(f'NuSVM -> [M]{cv_acc} - {acc}: {res["params"]}')
     '''
     '''KNN -> 0.743 {'n_neighbors': 9, 'p': 2, 'weights': 'uniform'}
     res = grid_search(data, type='knn')
     knn = res['estimator']
     cv_acc = res['score']
-    knn.fit(sX_train, sy_train)
-    acc = knn.score(sX_test, sy_test)
+    knn.fit(X_train, y_train)
+    acc = knn.score(X_test, y_test)
     print(f'KNN -> [M]{cv_acc} - {acc}: {res["params"]}')
     '''
 
