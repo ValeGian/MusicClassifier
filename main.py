@@ -1,5 +1,7 @@
 import warnings
 
+from sklearn.dummy import DummyClassifier
+
 import visualize as vl
 import features as ft
 import classification as cl
@@ -22,7 +24,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
@@ -186,17 +188,137 @@ def grid_search(data, type='default', verbose=0):
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
-    test_num = 100
-    labels = dt.get_labels()
-    data = dt.read_dataset(labels=['blues', 'classical', 'jazz', 'hiphop', 'pop', 'rock'], n_mfcc=20)
-    dt.remove_duplicates(data, same_label=False, inplace=True)
+    full_data = dt.read_dataset()
+    dt.remove_duplicates(full_data, same_label=False, inplace=True)
     # print(data.describe())
-
     # vl.correlation_matrix(data)
 
-    # Split dataset into training set and test set
-    X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True, random_state=101)
+    selected_genres = ['blues', 'classical', 'jazz', 'hiphop', 'pop', 'rock']
+    subset_data = full_data[full_data['genre'].isin(selected_genres)].copy()
 
+    # Initialize Features and Target
+    X, y = dt.extract_features_and_label(subset_data)
+
+    Xf, yf = dt.extract_features_and_label(full_data)
+
+    # Establish Train/Validation-Test split
+    X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.1, stratify=y, random_state=101)
+    Xf_train_val, Xf_test, yf_train_val, yf_test = train_test_split(Xf, yf, test_size=0.1, stratify=yf, random_state=101)
+
+    # Traditional train-test split
+    X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2,
+                                                      stratify=y_train_val, random_state=101)
+    Xf_train, Xf_val, yf_train, yf_val = train_test_split(Xf_train_val, yf_train_val, test_size=0.2,
+                                                          stratify=yf_train_val, random_state=101)
+
+    # Dummy Classifier
+    dummy = DummyClassifier()
+    dummy.fit(X_train, y_train)
+    print(dummy.score(X_val, y_val))
+
+    dummyf = DummyClassifier()
+    dummyf.fit(Xf_train, yf_train)
+    print(dummyf.score(Xf_val, yf_val))
+
+    print()
+    input()
+
+    # KNN
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(X_train, y_train)
+    print(knn_clf.score(X_val, y_val))
+
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(Xf_train, yf_train)
+    print(knn_clf.score(Xf_val, yf_val))
+
+    print()
+    input()
+
+    # Initialize Features and Target
+    X, y = dt.extract_scaled_features_and_label(subset_data)
+
+    Xf, yf = dt.extract_scaled_features_and_label(full_data)
+
+    # Establish Train/Validation-Test split
+    X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.1, stratify=y, random_state=101)
+    Xf_train_val, Xf_test, yf_train_val, yf_test = train_test_split(Xf, yf, test_size=0.1, stratify=yf,
+                                                                    random_state=101)
+
+    # Traditional train-test split
+    X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2,
+                                                      stratify=y_train_val, random_state=101)
+    Xf_train, Xf_val, yf_train, yf_val = train_test_split(Xf_train_val, yf_train_val, test_size=0.2,
+                                                          stratify=yf_train_val, random_state=101)
+
+    # Dummy Classifier
+    dummy = DummyClassifier()
+    dummy.fit(X_train, y_train)
+    print(dummy.score(X_val, y_val))
+
+    dummyf = DummyClassifier()
+    dummyf.fit(Xf_train, yf_train)
+    print(dummyf.score(Xf_val, yf_val))
+
+    print()
+    input()
+
+    # KNN
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(X_train, y_train)
+    print(knn_clf.score(X_val, y_val))
+
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(Xf_train, yf_train)
+    print(knn_clf.score(Xf_val, yf_val))
+
+    # Initialize Features and Target
+    X, y = dt.extract_scaled_features_and_label(subset_data)
+
+    Xf, yf = dt.extract_scaled_features_and_label(full_data)
+
+    # Establish Train/Validation-Test split
+    X_train_val, X_test, y_train_val, y_test = dt.tt_split(subset_data, scaled=True, random_state=101)
+    Xf_train_val, Xf_test, yf_train_val, yf_test = dt.tt_split(full_data, scaled=True, random_state=101)
+
+    # Dummy Classifier
+    dummy = DummyClassifier()
+    dummy.fit(X_train, y_train)
+    print(dummy.score(X_val, y_val))
+
+    dummyf = DummyClassifier()
+    dummyf.fit(Xf_train, yf_train)
+    print(dummyf.score(Xf_val, yf_val))
+
+    print()
+    input()
+
+    # KNN
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(X_train, y_train)
+    print(knn_clf.score(X_val, y_val))
+
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(Xf_train, yf_train)
+    print(knn_clf.score(Xf_val, yf_val))
+    '''
+    train_scores = []
+    scores = []
+    for i in range(1, 21):
+        # Split dataset into training set and test set
+        X_train, X_test, y_train, y_test = dt.tt_split(data, scaled=True, random_state=101)
+
+        clf = SVC(C=11, gamma=0.01468, kernel='rbf')
+        clf.fit(X_train, y_train)
+        print(clf.score(X_train, y_train))
+        print(clf.score(X_test, y_test))
+        train_scores.append(clf.score(X_train, y_train))
+        scores.append(clf.score(X_test, y_test))
+        print("----------------\n")
+    plt.plot(scores)
+    plt.plot(train_scores)
+    plt.show()
+    '''
     '''[10]Decision Tree -> 0.620 {'criterion': 'entropy', 'max_features': 'sqrt', 'min_samples_leaf': 1}
     res = grid_search(data, type='dec_tree', verbose=2)
     dec_tree = res['estimator']

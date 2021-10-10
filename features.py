@@ -77,5 +77,5 @@ def explode_features(features: list[Features], n_mfcc: int = DEF_N_MFCC) -> list
         else:
             for i in range(n_mfcc):
                 exploded_features.append(f'{Features.MFCC.name.lower()}{i}')
-    exploded_features.append('label')
+    exploded_features.append('genre')
     return exploded_features

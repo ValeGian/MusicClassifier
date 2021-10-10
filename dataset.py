@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 
 DATASET_PATH = './dataset'
 DATASET = 'data.csv'
-LABEL = 'label'
+LABEL = 'genre'
 
 
 def write_dataset(header: list[str]):
@@ -49,7 +49,7 @@ def write_dataset(header: list[str]):
                 print(count)
 
 
-def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft.DEF_N_MFCC,
+def read_dataset(features=ft.DEF_FEATURES, n_mfcc: int = ft.DEF_N_MFCC,
                  labels: list[str] = []) -> pd.DataFrame:
     """Read specified features from dataset
 
@@ -59,6 +59,8 @@ def read_dataset(features: list[ft.Features] = ft.DEF_FEATURES, n_mfcc: int = ft
             Used to select specific rows. [] = select every class
     :return: dataset as a pd.DataFrame
     """
+    if features == []:
+        features = ft.DEF_FEATURES
     names = ft.explode_features(ft.DEF_FEATURES, n_mfcc=ft.DEF_N_MFCC)
     selected_cols = ft.explode_features(features, n_mfcc=n_mfcc)
     data = pd.read_csv(DATASET, header=None, skipinitialspace=True, names=names, usecols=selected_cols)
@@ -139,11 +141,12 @@ def extract_scaled_features_and_label(data):
     return X, y
 
 
-def tt_split(data, scaled: bool = False, test_size=0.3, random_state=101):
+def tt_split(data, scaled: bool = False, test_size=0.3, stratify=None, random_state=101):
     if scaled:
         X, y = extract_scaled_features_and_label(data)
     else:
         X, y = extract_features_and_label(data)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, stratify=stratify,
+                                                        random_state=random_state)
 
     return X_train, X_test, y_train, y_test
