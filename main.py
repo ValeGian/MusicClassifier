@@ -189,28 +189,38 @@ def grid_search(data, type='default', verbose=0):
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     full_data = dt.read_dataset()
+
     dt.remove_duplicates(full_data, same_label=False, inplace=True)
-    # print(data.describe())
+    # print(full_data.describe())
     # vl.correlation_matrix(data)
 
-    selected_genres = ['blues', 'classical', 'jazz', 'hiphop', 'pop', 'rock']
-    subset_data = full_data[full_data['genre'].isin(selected_genres)].copy()
+    # selected_genres = ['blues', 'classical', 'jazz', 'hiphop', 'pop', 'rock']
+    # subset_data = full_data[full_data['genre'].isin(selected_genres)].copy()
 
     # Initialize Features and Target
-    X, y = dt.extract_features_and_label(subset_data)
-
-    Xf, yf = dt.extract_features_and_label(full_data)
+    X, y = dt.extract_scaled_features_and_label(full_data)
 
     # Establish Train/Validation-Test split
-    X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.1, stratify=y, random_state=101)
-    Xf_train_val, Xf_test, yf_train_val, yf_test = train_test_split(Xf, yf, test_size=0.1, stratify=yf, random_state=101)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=101)
 
-    # Traditional train-test split
-    X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2,
-                                                      stratify=y_train_val, random_state=101)
-    Xf_train, Xf_val, yf_train, yf_val = train_test_split(Xf_train_val, yf_train_val, test_size=0.2,
-                                                          stratify=yf_train_val, random_state=101)
+    # KNN
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(X_train, y_train)
+    print(knn_clf.score(X_test, y_test))
 
+    reduced_data = full_data.drop('spec_cent', 1)
+
+    # Initialize Features and Target
+    X, y = dt.extract_scaled_features_and_label(reduced_data)
+
+    # Establish Train/Validation-Test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=101)
+
+    # KNN
+    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
+    knn_clf.fit(X_train, y_train)
+    print(knn_clf.score(X_test, y_test))
+    '''
     # Dummy Classifier
     dummy = DummyClassifier()
     dummy.fit(X_train, y_train)
@@ -301,6 +311,7 @@ if __name__ == '__main__':
     knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
     knn_clf.fit(Xf_train, yf_train)
     print(knn_clf.score(Xf_val, yf_val))
+    '''
     '''
     train_scores = []
     scores = []
