@@ -12,6 +12,7 @@ import optimize as opt
 import librosa
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler, MaxAbsScaler, RobustScaler, Normalizer, PowerTransformer
 import os
 
 import matplotlib.pyplot as plt
@@ -19,7 +20,6 @@ import seaborn as sns
 
 from sklearn import metrics
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -111,8 +111,7 @@ def grid_search(data, type='default', verbose=0):
 
     elif type == 'r_forest':
         param_grid = [{'criterion': ['entropy', 'gini'],
-                       'n_estimators': np.arange(5, 105
-                                                 , 10),
+                       'n_estimators': np.arange(5, 105, 10),
                        'max_depth': range(2, 11),
                        'max_features': [None, 'sqrt', 'log2']
                        },
@@ -188,6 +187,7 @@ def grid_search(data, type='default', verbose=0):
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
+
     full_data = dt.read_dataset()
 
     dt.remove_duplicates(full_data, same_label=False, inplace=True)
@@ -197,29 +197,53 @@ if __name__ == '__main__':
     # selected_genres = ['blues', 'classical', 'jazz', 'hiphop', 'pop', 'rock']
     # subset_data = full_data[full_data['genre'].isin(selected_genres)].copy()
 
+    test_size = 0.3
+    clf = DecisionTreeClassifier(criterion='entropy', max_features='sqrt', min_samples_leaf=1, random_state=101)
+
     # Initialize Features and Target
     X, y = dt.extract_scaled_features_and_label(full_data)
 
     # Establish Train/Validation-Test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=101)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
 
-    # KNN
-    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
-    knn_clf.fit(X_train, y_train)
-    print(knn_clf.score(X_test, y_test))
+    # KNN 0.597972
+    clf.fit(X_train, y_train)
+    print(clf.score(X_test, y_test))
+#########
+    # Initialize Features and Target
+    scaler = RobustScaler(quantile_range=(25, 75))
+    X, y = dt.extract_scaled_features_and_label(full_data, scaler=scaler)
 
+    # Establish Train/Validation-Test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
+
+    # KNN 0.6081
+    clf.fit(X_train, y_train)
+    print(clf.score(X_test, y_test))
+########################
     reduced_data = full_data.drop('spec_cent', 1)
 
     # Initialize Features and Target
     X, y = dt.extract_scaled_features_and_label(reduced_data)
 
     # Establish Train/Validation-Test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=101)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
 
-    # KNN
-    knn_clf = KNeighborsClassifier(n_neighbors=9, p=2, weights='uniform')
-    knn_clf.fit(X_train, y_train)
-    print(knn_clf.score(X_test, y_test))
+    # KNN 0.60135
+    clf.fit(X_train, y_train)
+    print(clf.score(X_test, y_test))
+#####
+    # Initialize Features and Target
+    scaler = RobustScaler(quantile_range=(25, 75))
+    X, y = dt.extract_scaled_features_and_label(reduced_data, scaler=scaler)
+
+    # Establish Train/Validation-Test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=101)
+
+    # KNN 0.6081
+    clf.fit(X_train, y_train)
+    print(clf.score(X_test, y_test))
+    print("\n---------------\n")
     '''
     # Dummy Classifier
     dummy = DummyClassifier()

@@ -119,21 +119,22 @@ def extract_features_and_label(data):
     :param data: dataset as a pd.DataFrame
     :return: features and associated label
     """
-    X = data.drop(columns=[LABEL])
-    y = data[LABEL]
+    X = data.drop(columns=[LABEL]).values
+    y = data[LABEL].values
     return X, y
 
 
-def extract_scaled_features_and_label(data):
+def extract_scaled_features_and_label(data, scaler=None):
     """Scale and extract features and label from a dataset and return them separately as series
 
+    :param scaler: scaler object to be used
     :param data: dataset as a pd.DataFrame
     :return: scaled features and associated label
     """
     from sklearn.preprocessing import StandardScaler
-    scaler = StandardScaler()
-    scaler.fit(data.drop(LABEL, axis=1))
-    scaled_features = scaler.transform(data.drop(LABEL, axis=1))
+    if scaler is None:
+        scaler = StandardScaler()
+    scaled_features = scaler.fit_transform(data.drop(LABEL, axis=1))
     df_feat = pd.DataFrame(scaled_features, columns=data.columns[:-1])
 
     X = df_feat
