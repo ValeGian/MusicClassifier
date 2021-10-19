@@ -4,11 +4,9 @@ import numpy as np
 import sklearn
 import seaborn as sns
 
-def correlation_matrix(data):
-    sns.set_theme(style="white")
+def plot_correlation_matrix(df):
     # Compute the correlation matrix
-    selected_cols = data.columns.tolist()
-    corr = data[selected_cols].corr()
+    corr = df.corr().round(2)
 
     # Generate a mask for the upper triangle
     mask = np.triu(np.ones_like(corr, dtype=bool))
@@ -23,7 +21,11 @@ def correlation_matrix(data):
     sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
                 square=True, linewidths=.5, annot=True, cbar_kws={"shrink": .5})
 
-    plt.savefig('./imgs/audio_features_correlation_matrix.png')
+    # plt.figure(figsize=(20,15))
+    # sns.heatmap(df.corr(),cmap=plt.cm.Reds,annot=True)
+    plt.title('Heatmap displaying the relationship between\nthe features of the data',
+             fontsize=13)
+    plt.show()
 
 # Helper to plot confusion matrix -- from Scikit-learn website
 def plot_confusion_matrix(cm, classes,
