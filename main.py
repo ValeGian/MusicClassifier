@@ -4,7 +4,6 @@ from sklearn.dummy import DummyClassifier
 
 import visualize as vl
 import features as ft
-import classification as cl
 import statistics as st
 import dataset as dt
 import optimize as opt
