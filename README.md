@@ -7,7 +7,7 @@
 [Exploratory Data Analysis](#exploratory-data-analysis)<br/>
 [Machine Learning](#machine-learning)<br/>
 [Summary](#summary)<br/>
-[Future Questions](#future-questions)<br/>
+[Future Ideas](#future-ideas)<br/>
 [References](#references)<br/>
 
 ## Overview
@@ -67,7 +67,7 @@ I apply a 70-30 stratified train-test splitting of the dataset, on which I test 
 
 I therefore decide to continue testing the models that work best (Logistic Regression, Gradient Boosting, SVM and Nu-SVM), this time on a dataset with a reduced dimensionality of the feature space obtained by removing those that are strongly correlated, keeping one of each pair. This reduction results in an improvement in the performance of each classifier, with the Gradient Boosting reaching up to 67.23%.
 
-After tuning the hyperparamaters for the different models by a 10-fold cross-validated grid-search, the highest accuracy is achieved by the <b>Nu-SVM</b> model, which scores an average of 68.65% in the cross-validation and a <b>68.24% accuracy</b> on the test set. The results can be seen below in the multiclass confusion matrix.
+After tuning the hyperparamaters for the different models with a 10-fold cross-validated grid-search, the highest accuracy is achieved by the <b>Nu-SVM</b> model, which scores an average of 68.65% in the cross-validation and a <b>68.24% accuracy</b> on the test set. The results can be seen below in the multiclass confusion matrix.
 
 [<img src='imgs/full_conf_matrix.png'>]
 
@@ -83,7 +83,7 @@ The models I tested in this project were kNN, Logistic Regression, Decision Tree
 
 This project gave a good baseline for genre classification on single label classification. While this is useful, we know that songs can have multiple genres. Songs are not discreet and do not strictly fall into one genre or another. Looking forward, I would like to try to extend this model to perform multi-genre (multi-label) classification.
 
-Another avenue I'm interested in exploring is genre classification directly from raw audio data through Deep Learning techniques. It would be interesting to see if there's enough inherent information in song lyrics to build NLP models that can outperform audio feature models.
+Another avenue I'm interested in exploring is genre classification directly from raw audio data through Deep Learning techniques.
 
 If you made it this far, thanks so much for reading!
 
