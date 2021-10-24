@@ -47,6 +47,7 @@ I started my EDA by doing an univariate analysis, finding Skewness and Kurtosis 
 | Univariate Analysis |
 :-------------------------:|
 ![](imgs/univariate.png)
+
 After verifying the results, I further check the distribution of data for each feature by doing a multivariate and a univariate normality test, from which it turns out that only a few of the features follows a nearly normal distribution.
 
 I then continue by doing a multivariate analysis and by creating a correlation matrix, looking for relationships between different audio features.
